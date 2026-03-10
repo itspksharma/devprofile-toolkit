@@ -1,0 +1,602 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+
+.fade-in{
+animation:fadeIn 0.8s ease-in-out;
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(20px);}
+to{opacity:1; transform:translateY(0);}
+}
+
+.profile-card{
+background:#020617;
+border-radius:14px;
+padding:30px;
+box-shadow:0 0 30px rgba(0,0,0,0.6);
+}
+
+.stat-box{
+background:#020617;
+padding:15px;
+border-radius:10px;
+margin:5px;
+}
+
+.tech-pill{
+display:inline-block;
+padding:6px 12px;
+border-radius:20px;
+background:#1e293b;
+border:1px solid #3b82f6;
+color:#93c5fd;
+margin:4px;
+font-size:13px;
+}
+
+.repo-card:hover{
+transform:translateY(-5px);
+}
+
+.chart-box{
+background:#020617;
+padding:20px;
+border-radius:10px;
+}
+
+</style>
+
+
+<div class="container hero fade-in">
+
+
+<h1 class="display-5 fw-bold">
+GitHub Profile Analyzer
+</h1>
+
+<p class="text-secondary mt-3">
+Analyze GitHub profiles and discover developer insights.
+</p>
+
+<form method="POST" class="row justify-content-center mt-4" onsubmit="showLoader()">
+
+{% csrf_token %}
+
+<div class="col-md-6">
+<input
+type="text"
+name="username"
+class="form-control form-control-lg"
+placeholder="Enter GitHub Username"
+required>
+</div>
+
+
+
+<div class="col-md-2">
+<button type="submit" class="btn btn-primary btn-lg w-100">
+Analyze
+</button>
+</div>
+
+</form>
+
+<!-- Loader -->
+<div id="loader" style="display:none;text-align:center;margin-top:30px;">
+<div class="spinner-border text-primary"></div>
+<p class="mt-2">Analyzing GitHub Profile...</p>
+</div>
+
+</div>
+
+
+
+{% if data %}
+
+<div class="container mt-5 fade-in">
+
+<div class="profile-card text-center">
+
+<img src="{{ data.avatar }}" width="120" class="rounded-circle profile-avatar">
+
+<h3 class="mt-3">{{ data.name }}</h3>
+
+<p class="text-secondary">{{ data.bio }}</p>
+
+<h4 class="mt-3">Profile Score: {{ score }} / 100</h4>
+
+<h5 class="text-info">Developer Level: {{ level }}</h5>
+
+<h6 class="text-warning mt-2">Profile Health: {{ health }}%</h6>
+
+<div class="progress mt-3" style="height:10px;">
+<div class="progress-bar bg-warning" style="width: {{ health }}%"></div>
+</div>
+
+<div class="row mt-4">
+
+<div class="col stat-box">
+<h5>{{ data.repos }}</h5>
+<p class="text-secondary">Repositories</p>
+</div>
+
+<div class="col stat-box">
+<h5>{{ data.followers }}</h5>
+<p class="text-secondary">Followers</p>
+</div>
+
+<div class="col stat-box">
+<h5>{{ data.following }}</h5>
+<p class="text-secondary">Following</p>
+</div>
+
+</div>
+
+<a href="{{ data.profile }}" target="_blank" class="btn btn-outline-light mt-3">
+View GitHub Profile
+</a>
+
+</div>
+
+</div>
+
+{% endif %}
+
+
+
+{% if top_repos %}
+
+<div class="container mt-5 fade-in">
+
+<h3 class="text-center mb-4">Top Repositories</h3>
+
+<div class="row">
+
+{% for repo in top_repos %}
+
+<div class="col-md-4 mb-3">
+
+<div class="card repo-card bg-dark text-white p-3 h-100">
+
+<h5>{{ repo.name }}</h5>
+
+<p>{{ repo.description|default:"No description available" }}</p>
+
+<p>⭐ {{ repo.stargazers_count }}</p>
+
+<a href="{{ repo.html_url }}" target="_blank"
+class="btn btn-outline-light btn-sm">
+View Repo
+</a>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+{% endif %}
+
+
+
+{% if languages %}
+
+<div class="container mt-5 fade-in">
+
+<h3 class="text-center mb-4">Languages Used</h3>
+
+<div class="language-table">
+
+{% for lang in language_stats %}
+
+<div class="language-row">
+
+<div class="lang-name">
+{{ lang.name }}
+</div>
+
+<div class="lang-progress">
+
+<div class="lang-fill"
+style="width:{{ lang.percent }}%">
+</div>
+
+</div>
+
+<div class="lang-info">
+
+{{ lang.percent }}% • {{ lang.count }} repos
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+<div class="row charts-row mt-4">
+
+<div class="col-md-6 mb-3">
+
+<div class="chart-container">
+
+<h6 class="chart-title">Language Distribution</h6>
+
+<canvas id="langPie"></canvas>
+
+</div>
+
+</div>
+
+<div class="col-md-6 mb-3">
+
+<div class="chart-container">
+
+<h6 class="chart-title">Languages Used</h6>
+
+<canvas id="langChart"></canvas>
+
+</div>
+
+</div>
+
+</div>
+
+
+</div>
+
+{% endif %}
+
+
+
+{% if tech_stack %}
+
+<div class="container mt-5 fade-in">
+
+<h3 class="text-center mb-4">Developer Tech Stack</h3>
+
+<div class="row text-center">
+
+<div class="col-md-3">
+<h5>Frontend</h5>
+
+{% for skill in tech_stack.frontend %}
+<span class="tech-pill">{{ skill|title }}</span>
+{% empty %}
+<p class="text-secondary">Not detected</p>
+{% endfor %}
+
+</div>
+
+<div class="col-md-3">
+<h5>Backend</h5>
+
+{% for skill in tech_stack.backend %}
+<span class="tech-pill">{{ skill|title }}</span>
+{% empty %}
+<p class="text-secondary">Not detected</p>
+{% endfor %}
+
+</div>
+
+<div class="col-md-3">
+<h5>Database</h5>
+
+{% for skill in tech_stack.database %}
+<span class="tech-pill">{{ skill|title }}</span>
+{% empty %}
+<p class="text-secondary">Not detected</p>
+{% endfor %}
+
+</div>
+
+<div class="col-md-3">
+<h5>DevOps</h5>
+
+{% for skill in tech_stack.devops %}
+<span class="tech-pill">{{ skill|title }}</span>
+{% empty %}
+<p class="text-secondary">Not detected</p>
+{% endfor %}
+
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
+
+
+
+{% if data and username %}
+
+<div class="container mt-5 text-center fade-in">
+
+<h3 class="mb-4">Contribution Activity</h3>
+
+<img
+src="https://ghchart.rshah.org/{{ username }}"
+alt="GitHub Contribution Graph"
+class="img-fluid">
+
+<div class="row mt-5">
+
+<div class="col-md-6">
+<img
+loading="lazy"
+src="https://github-readme-stats.vercel.app/api?username={{username}}&show_icons=true&theme=tokyonight"
+onerror="this.style.display='none'">
+</div>
+
+<div class="col-md-6">
+<img
+loading="lazy"
+src="https://github-readme-stats.vercel.app/api/top-langs/?username={{username}}&layout=compact&theme=tokyonight"
+onerror="this.style.display='none'">
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
+
+
+
+{% if badges %}
+
+<div class="container mt-5 text-center fade-in">
+
+<h3>Developer Badges</h3>
+
+{% for badge in badges %}
+<span class="dev-badge">{{ badge }}</span>
+{% endfor %}
+
+</div>
+
+{% endif %}
+
+
+
+{% if suggestions and data %}
+
+<div class="container mt-5 fade-in">
+
+<h3 class="text-center mb-4">Profile Improvement Tips</h3>
+
+<ul class="list-group">
+
+{% for tip in suggestions %}
+
+<li class="list-group-item bg-dark text-white">
+• {{ tip }}
+</li>
+
+{% endfor %}
+
+</ul>
+
+</div>
+
+{% endif %}
+
+
+
+{% if data %}
+
+<div class="text-center mt-5 fade-in">
+
+<h4>Share this analysis</h4>
+
+<div class="d-flex justify-content-center gap-3 mt-3">
+
+<a target="_blank"
+href="https://twitter.com/intent/tweet?text=Check%20this%20GitHub%20profile%20analysis&url={{ request.build_absolute_uri }}?user={{username}}">
+<button class="btn btn-info btn-sm">🐦 Twitter</button>
+</a>
+
+<a target="_blank"
+href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}?user={{username}}">
+<button class="btn btn-primary btn-sm">💼 LinkedIn</button>
+</a>
+
+<button onclick="copyLink()" class="btn btn-success btn-sm">
+🔗 Copy Link
+</button>
+
+<button onclick="window.print()" class="btn btn-warning btn-sm">
+⬇ Download Report
+</button>
+
+</div>
+
+</div>
+
+{% endif %}
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:11">
+
+<div id="copyToast" class="toast align-items-center text-bg-success border-0">
+
+<div class="d-flex">
+
+<div class="toast-body">
+✔ Link copied successfully
+</div>
+
+<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+function showLoader(){
+
+document.getElementById("loader").style.display="none";
+
+document.getElementById("skeletonLoader").style.display="block";
+
+}
+
+
+document.addEventListener("DOMContentLoaded", function(){
+
+const labels = [
+{% for lang in language_stats %}
+"{{ lang.name }}",
+{% endfor %}
+];
+
+const values = [
+{% for lang in language_stats %}
+{{ lang.count }},
+{% endfor %}
+];
+
+const colors = [
+"#f1e05a", // JS
+"#3572A5", // Python
+"#e34c26", // HTML
+"#563d7c", // CSS
+"#89e051",
+"#b07219",
+"#701516",
+"#dea584"
+];
+
+const pie = document.getElementById('langPie');
+
+if(pie){
+
+new Chart(pie,{
+
+type:'pie',
+
+data:{
+labels:labels,
+datasets:[{
+data:values,
+backgroundColor:colors,
+borderWidth:0
+}]
+},
+
+options:{
+
+responsive:true,
+
+maintainAspectRatio:false,
+
+plugins:{
+legend:{
+position:"bottom",
+labels:{
+color:"#ffffff",
+padding:15
+}
+}
+}
+
+}
+
+});
+
+}
+
+const bar = document.getElementById('langChart');
+
+
+if(bar){
+
+new Chart(bar,{
+
+type:'bar',
+
+data:{
+
+labels:labels,
+
+datasets:[{
+
+data:values,
+
+backgroundColor:colors,
+
+borderRadius:6
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+maintainAspectRatio:false,
+
+plugins:{
+
+legend:{display:false}
+
+},
+
+scales:{
+
+y:{
+
+beginAtZero:true,
+
+grid:{color:"#1e293b"}
+
+},
+
+x:{
+
+grid:{display:false}
+
+}
+
+}
+
+}
+
+});
+
+}
+
+});
+
+
+function copyLink(){
+
+const username = "{{ username }}";
+
+const link = window.location.origin + "/analyzer/?user=" + username;
+
+navigator.clipboard.writeText(link);
+
+var toast = new bootstrap.Toast(document.getElementById('copyToast'));
+
+toast.show();
+
+}
+
+</script>
+
+{% endblock %}

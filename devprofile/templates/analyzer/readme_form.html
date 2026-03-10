@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+.form-container{
+width:100%;
+max-width:1400px;
+margin:auto;
+padding:30px;
+}
+
+.form-container h2{
+margin-bottom:25px;
+text-align:center;
+}
+
+.form-section{
+margin-top:25px;
+padding-top:15px;
+border-top:1px solid #eee;
+}
+
+.form-section h3{
+margin-bottom:15px;
+font-size:18px;
+color:#333;
+}
+
+.form-group{
+margin-bottom:15px;
+}
+
+input, textarea, select{
+width:100%;
+padding:12px;
+border:1px solid #d1d5db;
+border-radius:8px;
+font-size:14px;
+background:#f9fafb;
+transition:0.2s;
+}
+
+input:focus, textarea:focus{
+outline:none;
+border-color:#2563eb;
+background:white;
+box-shadow:0 0 0 2px rgba(37,99,235,0.15);
+}
+
+textarea{
+height:80px;
+resize:vertical;
+}
+
+button{
+background:#2563eb;
+color:white;
+padding:12px 18px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+font-size:14px;
+}
+
+button:hover{
+background:#1d4ed8;
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
+}
+
+@media(max-width:900px){
+.form-grid{
+grid-template-columns:1fr;
+}
+}
+
+.project-item{
+display:grid;
+grid-template-columns:1fr 2fr 1fr 1fr;
+gap:10px;
+margin-bottom:10px;
+}
+
+</style>
+
+
+<div class="form-container">
+
+<h2>GitHub README Generator</h2>
+
+<form method="POST">
+<div class="form-grid"></div>
+
+{% csrf_token %}
+
+
+<!-- Banner -->
+
+<div class="form-section">
+<h3>Banner</h3>
+
+<div class="form-group">
+<label>Banner Image URL</label>
+<input type="text" name="banner_url" placeholder="https://example.com/banner.svg">
+</div>
+</div>
+
+
+<!-- Greeting -->
+
+<div class="form-section">
+<h3>Greeting</h3>
+
+<div class="form-group">
+<label>Greeting Text</label>
+<input type="text" name="greeting" placeholder="🙏 राधे राधे 🙏">
+</div>
+
+<div class="form-group">
+<label>Name</label>
+<input type="text" name="name" placeholder="Pawan Kumar Sharma" required>
+</div>
+
+<div class="form-group">
+<label>Tagline</label>
+<input type="text" name="tagline" placeholder="MERN Stack Developer">
+</div>
+</div>
+
+
+<!-- Social Links -->
+
+<div class="form-section">
+<h3>Social Links</h3>
+
+<div class="form-group">
+<label>GitHub Username</label>
+<input type="text" name="github" placeholder="itspksharma">
+</div>
+
+<div class="form-group">
+<label>LinkedIn</label>
+<input type="text" name="linkedin">
+</div>
+
+<div class="form-group">
+<label>Email</label>
+<input type="text" name="email">
+</div>
+
+<div class="form-group">
+<label>WhatsApp</label>
+<input type="text" name="whatsapp">
+</div>
+
+<div class="form-group">
+<label>Portfolio</label>
+<input type="text" name="portfolio">
+</div>
+
+<div class="form-group">
+<label>Dev.to</label>
+<input type="text" name="devto">
+</div>
+
+</div>
+
+
+<!-- Goal -->
+
+<div class="form-section">
+<h3>Goal</h3>
+
+<div class="form-group">
+<label>Quote</label>
+<input type="text" name="goal_quote">
+</div>
+
+<div class="form-group">
+<label>Description</label>
+<textarea name="goal_desc"></textarea>
+</div>
+</div>
+
+
+<!-- About Me -->
+
+<div class="form-section">
+<h3>About Me</h3>
+
+<div class="form-group">
+<label>Languages</label>
+<input type="text" name="languages" placeholder="HTML, CSS, JavaScript">
+</div>
+
+<div class="form-group">
+<label>Currently Learning</label>
+<input type="text" name="learning">
+</div>
+
+<div class="form-group">
+<label>Future Goals</label>
+<textarea name="future_goals"></textarea>
+</div>
+
+<div class="form-group">
+<label>Interests</label>
+<input type="text" name="interests">
+</div>
+
+</div>
+
+
+<!-- Tech Stack -->
+
+<div class="form-section">
+
+<h3>Tech Stack</h3>
+
+<label><input type="checkbox" name="tech_stack" value="react"> React</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="nodejs"> NodeJS</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="mongodb"> MongoDB</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="js"> JavaScript</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="express"> Express</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="html"> HTML</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="css"> CSS</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="python"> Python</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="java"> Java</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="php"> PHP</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="mysql"> MySQL</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="git"> Git</label><br>
+
+<label><input type="checkbox" name="tech_stack" value="github"> GitHub</label>
+
+</div>
+
+
+<!-- Projects -->
+
+<div class="form-section">
+
+<h3>Projects</h3>
+
+<div id="projects-container">
+
+<div class="project-item">
+
+<input type="text" name="project_name" placeholder="Project Name">
+
+<input type="text" name="project_desc" placeholder="Description">
+
+<input type="text" name="project_tech" placeholder="Tech">
+
+<input type="text" name="project_link" placeholder="GitHub Link">
+
+</div>
+
+</div>
+
+<button type="button" onclick="addProject()">Add Project</button>
+
+</div>
+
+
+<!-- GitHub Stats -->
+
+<div class="form-section">
+<h3>GitHub Stats</h3>
+
+<div class="form-group">
+
+<label>
+<input type="checkbox" name="show_stats"> Show GitHub Stats
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_langs"> Top Languages
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_streak"> GitHub Streak
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_graph"> Activity Graph
+</label>
+
+</div>
+
+</div>
+
+
+<!-- Certifications -->
+
+<div class="form-section">
+<h3>Certifications</h3>
+
+<div class="form-group">
+<label>Certificate Name</label>
+<input type="text" name="cert_name">
+</div>
+
+<div class="form-group">
+<label>Certificate Link</label>
+<input type="text" name="cert_link">
+</div>
+
+</div>
+
+
+<!-- Contact -->
+
+<div class="form-section">
+<h3>Contact</h3>
+
+<div class="form-group">
+<label>Website</label>
+<input type="text" name="website">
+</div>
+
+<div class="form-group">
+<label>Email</label>
+<input type="text" name="contact_email">
+</div>
+
+<div class="form-group">
+<label>LinkedIn</label>
+<input type="text" name="contact_linkedin">
+</div>
+
+</div>
+
+<div class="form-section">
+
+<h3>Sections Control</h3>
+
+<label>
+<input type="checkbox" name="show_banner" checked>
+ Show Banner
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_greeting" checked>
+ Show Greeting
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_about" checked>
+ Show About Section
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_projects" checked>
+ Show Projects
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_stack" checked>
+ Show Tech Stack
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_certifications">
+ Show Certifications
+</label>
+
+<br>
+
+<label>
+<input type="checkbox" name="show_contact" checked>
+ Show Contact
+</label>
+
+</div>
+
+
+<!-- Theme -->
+
+<div class="form-section">
+<h3>Theme</h3>
+
+<div class="form-group">
+
+<select name="theme">
+
+<option value="gruvbox">Gruvbox</option>
+<option value="tokyonight">Tokyo Night</option>
+<option value="radical">Radical</option>
+<option value="dark">Dark</option>
+<option value="minimal">Minimal</option>
+
+</select>
+
+</div>
+
+</div>
+
+</div>
+
+
+<button type="submit">Generate README</button>
+
+</form>
+
+<script>
+
+function addProject(){
+
+const container = document.getElementById("projects-container");
+
+const div = document.createElement("div");
+
+div.classList.add("project-item");
+
+div.innerHTML = `
+<input type="text" name="project_name" placeholder="Project Name">
+<input type="text" name="project_desc" placeholder="Description">
+<input type="text" name="project_tech" placeholder="Tech">
+<input type="text" name="project_link" placeholder="GitHub Link">
+`;
+
+container.appendChild(div);
+
+}
+
+</script>
+
+</div>
+
+{% endblock %}

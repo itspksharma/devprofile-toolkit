@@ -1,0 +1,54 @@
+{
+  "frontend": [
+    "html",
+    "css",
+    "javascript",
+    "typescript",
+    "react",
+    "next.js",
+    "vue",
+    "angular",
+    "tailwind",
+    "bootstrap",
+    "astro"
+  ],
+
+  "backend": [
+    "python",
+    "django",
+    "flask",
+    "node",
+    "express",
+    "java",
+    "spring",
+    "php",
+    "laravel",
+    "c",
+    "c++"
+  ],
+
+  "database": [
+    "mysql",
+    "postgresql",
+    "mongodb",
+    "sqlite",
+    "redis",
+    "firebase"
+  ],
+
+  "devops": [
+    "docker",
+    "kubernetes",
+    "aws",
+    "azure",
+    "github actions",
+    "ci/cd"
+  ],
+
+  "mobile": [
+    "react native",
+    "flutter",
+    "kotlin",
+    "swift"
+  ]
+}
