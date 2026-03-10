@@ -1,3 +1,16 @@
-venv
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Django
 db.sqlite3
-__pycache__
+*.log
+
+# Virtual env
+venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
