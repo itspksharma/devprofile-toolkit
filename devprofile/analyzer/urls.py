@@ -4,7 +4,9 @@ from analyzer.views.readme_view import readme_generator
 
 urlpatterns = [
 
-    path("analyzer/", analyzer_home, name="home"),
+    path("", analyzer_home, name="home"),   # homepage
+
+    path("analyzer/", analyzer_home),
 
     path("readme/", readme_generator, name="readme_generator"),
 
