@@ -1,1 +1,1 @@
-web: gunicorn devprofile.wsgi
+web: gunicorn devprofile.wsgi --timeout 60

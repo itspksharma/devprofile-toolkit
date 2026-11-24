@@ -1,95 +1,65 @@
+"""Conservative file-based stack detection; no claims about developer skill."""
 import json
-import os
+import re
+from pathlib import PurePosixPath
+
+MANIFESTS = {"package.json", "requirements.txt", "pyproject.toml", "Pipfile", "pubspec.yaml", "Cargo.toml", "go.mod", "composer.json", "pom.xml", "build.gradle", "Gemfile", "Dockerfile", ".gitlab-ci.yml"}
 
 
-def load_tech_stack():
+def detect_evidence(files):
+    evidence = []
+    for path, content in files.items():
+        filename = PurePosixPath(path).name
+        if filename == "package.json":
+            try:
+                obj = json.loads(content)
+                names = set()
+                for key in ("dependencies", "devDependencies", "peerDependencies"):
+                    if isinstance(obj.get(key), dict):
+                        names.update(obj[key])
+            except (ValueError, AttributeError, TypeError):
+                continue
+            mapping = {"react": "React", "next": "Next.js", "vue": "Vue", "express": "Express", "@angular/core": "Angular", "svelte": "Svelte", "tailwindcss": "Tailwind CSS", "typescript": "TypeScript", "mongoose": "MongoDB (Mongoose)"}
+            for dependency, label in mapping.items():
+                if dependency in names:
+                    evidence.append({"name": label, "file": path, "reason": f"Declared dependency: {dependency}"})
+            evidence.append({"name": "Node.js ecosystem", "file": path, "reason": "package.json present"})
+        elif filename in {"requirements.txt", "pyproject.toml", "Pipfile"}:
+            for dependency, label in {"django": "Django", "flask": "Flask", "fastapi": "FastAPI", "pytest": "pytest", "sqlalchemy": "SQLAlchemy"}.items():
+                if re.search(r'(?im)^\s*(?:["\[])?' + dependency + r'(?:["\]\s<>=!~;]|$)', content):
+                    evidence.append({"name": label, "file": path, "reason": f"Dependency declaration: {dependency}"})
+            evidence.append({"name": "Python", "file": path, "reason": "Python dependency manifest"})
+        else:
+            label = {"pubspec.yaml": "Dart", "Cargo.toml": "Rust", "go.mod": "Go", "composer.json": "PHP", "pom.xml": "Java / Maven", "build.gradle": "Gradle", "Gemfile": "Ruby", "Dockerfile": "Docker", ".gitlab-ci.yml": "GitLab CI"}.get(filename)
+            if label:
+                evidence.append({"name": label, "file": path, "reason": "Configuration file present"})
+            if filename == "pubspec.yaml" and re.search(r"(?m)^\s*flutter:", content):
+                evidence.append({"name": "Flutter", "file": path, "reason": "Flutter declaration"})
+    return evidence
 
-    path = os.path.join("analyzer", "data", "tech_stack.json")
 
-    with open(path) as f:
-        return json.load(f)
-
-
-def detect_tech_stack(repo_languages, repos):
-
-    tech_stack = load_tech_stack()
-
-    detected = {
-        "frontend": set(),
-        "backend": set(),
-        "database": set(),
-        "devops": set(),
-        "mobile": set()
-    }
-
-    # -----------------------------
-    # Detect from languages
-    # -----------------------------
-
-    for lang in repo_languages:
-
-        lang = lang.lower()
-
-        for category, skills in tech_stack.items():
-
-            skills_lower = [s.lower() for s in skills]
-
-            if lang in skills_lower:
-                detected[category].add(lang)
-
-    # -----------------------------
-    # Detect from repo names
-    # -----------------------------
-
-    for repo in repos:
-
-        name = repo.get("name", "").lower()
-        desc = (repo.get("description") or "").lower()
-
-        text = name + " " + desc
-
-        # Backend frameworks
-        if "django" in text:
-            detected["backend"].add("django")
-
-        if "flask" in text:
-            detected["backend"].add("flask")
-
-        if "node" in text:
-            detected["backend"].add("node")
-
-        if "express" in text:
-            detected["backend"].add("express")
-
-        # Frontend frameworks
-        if "react" in text:
-            detected["frontend"].add("react")
-
-        if "vue" in text:
-            detected["frontend"].add("vue")
-
-        if "next" in text:
-            detected["frontend"].add("next.js")
-
-        # Database
-        if "mysql" in text:
-            detected["database"].add("mysql")
-
-        if "postgres" in text:
-            detected["database"].add("postgresql")
-
-        if "mongodb" in text:
-            detected["database"].add("mongodb")
-
-        # DevOps
-        if "docker" in text:
-            detected["devops"].add("docker")
-
-        if "kubernetes" in text:
-            detected["devops"].add("kubernetes")
-
-    # Convert sets to lists (for Django template)
-    for category in detected:
-        detected[category] = list(detected[category])
-
-    return detected
+def audit_readme(text):
+    # Example headings inside fenced code are not documentation sections.
+    visible = []
+    fence = None
+    for line in text.splitlines():
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if marker:
+            run = marker.group(1)
+            if fence is None:
+                fence = run
+            elif run[0] == fence[0] and len(run) >= len(fence) and not line[marker.end():].strip():
+                fence = None
+            continue
+        if fence is None:
+            visible.append(line)
+    text = "\n".join(visible)
+    checks = [
+        ("Overview", bool(re.search(r"(?m)^#[ \t]+\S", text))),
+        ("Installation / setup", bool(re.search(r"(?im)^#{2,6}[ \t]+.*\b(install\w*|setup|getting started|quick ?start)\b", text))),
+        ("Usage / examples", bool(re.search(r"(?im)^#{2,6}[ \t]+.*\b(usage|examples?|how to use)\b", text))),
+        ("Configuration", bool(re.search(r"(?im)^#{2,6}[ \t]+.*\b(config\w*|environment)\b", text))),
+        ("License", bool(re.search(r"(?im)^#{2,6}[ \t]+.*\blicen[cs]e\b", text))),
+        ("Contributing", bool(re.search(r"(?im)^#{2,6}[ \t]+.*\bcontribut\w*\b", text))),
+    ]
+    return [{"name": name, "passed": passed} for name, passed in checks]
