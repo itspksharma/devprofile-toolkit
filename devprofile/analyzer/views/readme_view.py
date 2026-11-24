@@ -1,67 +1,49 @@
+import json
+
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
+
+from analyzer.forms import ReadmeForm
 from analyzer.readme.generator import generate_readme
+from analyzer.services import AnalysisError, analyze
 
 
 def readme_generator(request):
+    imported = None
+    error = None
+    markdown = ""
+    initial = {}
+    if request.method == "GET" and request.GET.get("repository"):
+        try:
+            result = analyze(request.GET["repository"], request.GET.get("provider", "github"), True, True)
+            inspection = result.get("inspection")
+            if not inspection:
+                raise AnalysisError("File inspection is unavailable. You can still fill in your README below.")
+            initial = inspection["import_data"]
+            imported = result["target"]
+            if request.GET.get("existing") == "1":
+                markdown = inspection["readme"]
+                if not markdown:
+                    error = "No readable root README was found. Start with the fields below."
+        except AnalysisError as exc:
+            error = str(exc)
+    form = ReadmeForm(request.POST if request.method == "POST" else None, initial=initial)
+    if request.method == "POST" and form.is_valid():
+        markdown = generate_readme(form.cleaned_data)
+    projects = request.POST.get("projects_json", "[]") if request.method == "POST" else "[]"
+    try:
+        projects = json.loads(projects)
+        if not isinstance(projects, list):
+            projects = []
+    except (ValueError, TypeError):
+        projects = []
+    return render(request, "analyzer/readme_form.html", {"form": form, "markdown": markdown, "imported": imported, "error": error, "projects": projects})
 
-    if request.method == "POST":
 
-        data = {
-
-            "banner_url": request.POST.get("banner_url"),
-            "greeting": request.POST.get("greeting"),
-            "name": request.POST.get("name"),
-            "tagline": request.POST.get("tagline"),
-
-            "github": request.POST.get("github"),
-            "linkedin": request.POST.get("linkedin"),
-            "email": request.POST.get("email"),
-            "whatsapp": request.POST.get("whatsapp"),
-            "portfolio": request.POST.get("portfolio"),
-            "devto": request.POST.get("devto"),
-
-            "goal_quote": request.POST.get("goal_quote"),
-            "goal_desc": request.POST.get("goal_desc"),
-
-            "languages": request.POST.get("languages"),
-            "learning": request.POST.get("learning"),
-            "future_goals": request.POST.get("future_goals"),
-            "interests": request.POST.get("interests"),
-
-            "tech_stack": request.POST.getlist("tech_stack"),
-
-            "project_name": request.POST.getlist("project_name"),
-            "project_desc": request.POST.getlist("project_desc"),
-            "project_tech": request.POST.getlist("project_tech"),
-            "project_link": request.POST.getlist("project_link"),
-
-            "cert_name": request.POST.get("cert_name"),
-            "cert_link": request.POST.get("cert_link"),
-
-            "website": request.POST.get("website"),
-            "contact_email": request.POST.get("contact_email"),
-            "contact_linkedin": request.POST.get("contact_linkedin"),
-
-            "theme": request.POST.get("theme"),
-
-            "show_stats": request.POST.get("show_stats"),
-            "show_langs": request.POST.get("show_langs"),
-            "show_streak": request.POST.get("show_streak"),
-            "show_graph": request.POST.get("show_graph"),
-            "show_banner": request.POST.get("show_banner"),
-            "show_greeting": request.POST.get("show_greeting"),
-            "show_about": request.POST.get("show_about"),
-            "show_projects": request.POST.get("show_projects"),
-            "show_stack": request.POST.get("show_stack"),
-            "show_certifications": request.POST.get("show_certifications"),
-            "show_contact": request.POST.get("show_contact"),
-
-            }
-
-        readme = generate_readme(data)
-
-        return render(request, "analyzer/readme_result.html", {
-            "readme": readme
-        })
-
-    return render(request, "analyzer/readme_form.html")
+@require_POST
+def readme_preview(request):
+    form = ReadmeForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+    return JsonResponse({"markdown": generate_readme(form.cleaned_data)})
